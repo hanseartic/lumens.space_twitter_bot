@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- Up
 --------------------------------------------------------------------------------
-CREATE TABLE payments(
+CREATE TABLE IF NOT EXISTS payments(
     id TEXT PRIMARY KEY NOT NULL,
     timestamp TEXT NOT NULL,
     asset TEXT NOT NULL,

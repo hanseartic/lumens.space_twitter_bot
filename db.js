@@ -24,14 +24,31 @@ const getBurnedCount = () => {
         .then(r => r.burned)
 };
 
-const getPaymentsCount = () => {
-    return database?.get("SELECT  count(*) as paid FROM payments WHERE op_type = '13' ")
+const getSwappedCount = () => {
+    return database?.get("SELECT count(*) as paid FROM payments WHERE op_type = '13' ")
         .then(r => r.paid);
 }
 
+const getSwaps = () => {
+    return database?.all("SELECT * from payments WHERE op_type = '13'");
+};
+
+const getLatestTweet = () => {
+    return database?.get("SELECT * FROM tweets ORDER BY timestamp DESC LIMIT 1");
+};
+const confirmTweet = (tweetId, payment) => {
+    return database?.run(
+        "INSERT INTO tweets (id, timestamp, latest_payment) VALUES(?, ?, ?)",
+        tweetId, null, payment
+    );
+};
+
 module.exports = {
     init,
+    confirmTweet,
+    getBurnedCount,
+    getLatestTweet,
     getPaymentsCursor: getCursor,
-    getPaymentsCount,
-    getBurnedCount
+    getSwappedCount,
+    getSwaps
 };

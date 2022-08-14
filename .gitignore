@@ -1,2 +1,5 @@
+.env
 .idea
+twitter_config.js
 stellarclaimstats.iml
+*.sql
