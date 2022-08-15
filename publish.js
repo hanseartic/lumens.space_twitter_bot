@@ -15,7 +15,7 @@ const main = async () => {
     const latestTweet = await getLatestTweet();
     const cursor = await getPaymentsCursor();
     console.log(cursor, latestTweet)
-    if (cursor === latestTweet.latest_payment) {
+    if (cursor === latestTweet?.latest_payment) {
         console.log("Already published for latest TX");
         return;
     }
