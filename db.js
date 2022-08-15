@@ -16,7 +16,7 @@ const init = () => {
 
 const getCursor = () => {
     return database?.get("SELECT id FROM payments ORDER BY id DESC LIMIT 1")
-        .then(r => r.id);
+        .then(r => r?.id);
 }
 
 const getBurnedCount = () => {

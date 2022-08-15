@@ -6,7 +6,7 @@ const {init: initDB, getBurnedCount, getPaymentsCursor, getSwappedCount} = requi
 
 const fetchPayments = async (latestId, db) => {
     await fetch(paymentLocatorUrl + "&cursor=" + latestId)
-        .then(r => r.json())
+        .then(res => res.json())
         .then(async response => {
             const records = response["_embedded"]["records"];
             await Promise.all(records.map(async r => {
