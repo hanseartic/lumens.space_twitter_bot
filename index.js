@@ -3,6 +3,7 @@ const fetch = require("node-fetch");
 
 const paymentLocatorUrl = "https://api.stellar.expert/explorer/public/payments?sort=id&limit=200&order=asc&memo="+encodeURI("stellarclaim:🗑💱💰");
 const {init: initDB, getBurnedCount, getPaymentsCursor, getSwappedCount} = require("./db")
+let shouldRun = true;
 
 const fetchPayments = async (latestId, db) => {
     await fetch(paymentLocatorUrl + "&cursor=" + latestId)
@@ -16,7 +17,7 @@ const fetchPayments = async (latestId, db) => {
                     r.id, r.ts, r.source_asset.substring(-2), r.from, r.to, (new BigNumber(r.amount).toNumber()), r.optype
                 );
             }));
-            if (response["_links"]["self"]["href"] === response["_links"]["next"]["href"]) {
+            if (!shouldRun || response["_links"]["self"]["href"] === response["_links"]["next"]["href"]) {
                 return;
             }
             const nextUrl = new URL(response["_links"]["next"]["href"], paymentLocatorUrl);
@@ -31,10 +32,21 @@ const list = () => {
     getSwappedCount().then(swappedCount => console.log("swap", swappedCount))
 };
 
-initDB().then(async dab => {
-    const latestId = await getPaymentsCursor();
-    console.log("fetching new claimable balances. starting at cursor " + latestId);
-    await fetchPayments(latestId, dab);
-    console.log("synced all available claimable balances");
-    list();
-})
+const run = () => {
+    initDB().then(async dab => {
+        const latestId = await getPaymentsCursor();
+        console.log("fetching new claimable balances. starting at cursor " + latestId);
+        await fetchPayments(latestId, dab);
+        console.log("synced all available claimable balances");
+        await list();
+        dab.close();
+    });
+};
+
+run();
+const timer = setInterval(run, 30000);
+process.on('SIGINT', () => {
+    console.log("Received SIGINT - stopping");
+    shouldRun = false;
+    clearInterval(timer);
+});
