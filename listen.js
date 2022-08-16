@@ -62,10 +62,12 @@ const main = async () => {
                             twitterBotClient.tweet("I have not processed such asset(s).", {reply: {in_reply_to_tweet_id: event.data.id}});
                         }
                         let replyTo = event.data.id;
-                        stati.forEach(async status => {
-                            const tweetStatus = await twitterBotClient.tweet(status, {reply: {in_reply_to_tweet_id: replyTo}});
-                            replyTo = tweetStatus.data.id;
-                        });
+                        (async() => {
+                            for (const status of stati) {
+                                const tweetStatus = await twitterBotClient.tweet(status, {reply: {in_reply_to_tweet_id: replyTo}});
+                                replyTo = tweetStatus.data.id;
+                            }
+                        })()
                     });
                 }
             });
