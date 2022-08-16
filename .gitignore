@@ -1,5 +1,7 @@
-.env
 .idea
+node_modules
+!migrations
+.env
+*.sql
 twitter_config.js
 stellarclaimstats.iml
-./*.sql

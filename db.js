@@ -19,23 +19,32 @@ const getCursor = () => {
         .then(r => r?.id);
 }
 
-const getBurnedCount = () => {
-    return database?.get("SELECT count(*) as burned FROM payments WHERE op_type = '1'")
+const getBurnedCount = (asset) => {
+    return database?.get(`SELECT count(*) as burned FROM payments WHERE op_type = '1' AND asset LIKE '${asset??"%"}-%'`)
         .then(r => r.burned)
 };
 
-const getSwappedCount = () => {
-    return database?.get("SELECT count(*) as paid FROM payments WHERE op_type = '13' ")
+const getSwappedCount = (asset) => {
+    return database?.get(`SELECT count(*) as paid FROM payments WHERE op_type = '13' AND asset LIKE '${asset??"%"}-%'`)
         .then(r => r.paid);
 }
 
-const getSwaps = () => {
-    return database?.all("SELECT * from payments WHERE op_type = '13'");
+const getSwaps = (asset) => {
+    return database?.all(`SELECT * FROM payments WHERE op_type = '13' AND asset LIKE '${asset??"%"}-%'`);
+};
+
+const matchAssets = (assetCode) => {
+    return database?.all(`SELECT DISTINCT asset FROM payments WHERE asset like '${assetCode??"%"}-%'`)
+        .then(rows => rows.map(row => {
+            const rowData = row.asset.split('-');
+            return {code: rowData[0], issuer: rowData[1]};
+        }));
 };
 
 const getLatestTweet = () => {
     return database?.get("SELECT * FROM tweets ORDER BY timestamp DESC LIMIT 1");
 };
+
 const confirmTweet = (tweetId, payment) => {
     return database?.run(
         "INSERT INTO tweets (id, timestamp, latest_payment) VALUES(?, ?, ?)",
@@ -50,5 +59,6 @@ module.exports = {
     getLatestTweet,
     getPaymentsCursor: getCursor,
     getSwappedCount,
-    getSwaps
+    getSwaps,
+    matchAssets
 };

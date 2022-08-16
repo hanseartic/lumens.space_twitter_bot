@@ -2,19 +2,17 @@ const {init: initDB, getSwaps} = require("./db.js");
 const BigNumber = require("bignumber.js");
 const {TwitterApi} = require("twitter-api-v2");
 const twitterConfig = require("./twitter_config");
+const {sumReducer} = require("./common");
 const {confirmTweet, getSwappedCount, getBurnedCount, getLatestTweet, getPaymentsCursor} = require("./db");
 
 const twitterApi = new TwitterApi(twitterConfig);
 const twitterClient = twitterApi.v2;
-
-const sumReducer = (prev, current) => new BigNumber(current).plus(prev);
 
 const main = async () => {
     await initDB();
 
     const latestTweet = await getLatestTweet();
     const cursor = await getPaymentsCursor();
-    console.log(cursor, latestTweet)
     if (cursor === latestTweet?.latest_payment) {
         console.log("Already published for latest TX");
         return;
@@ -43,3 +41,4 @@ const main = async () => {
 };
 
 main();
+process.on("SIGINT", () => {});
