@@ -61,8 +61,10 @@ const main = async () => {
                         if (stati.length === 0) {
                             twitterBotClient.tweet("I have not processed such asset(s).", {reply: {in_reply_to_tweet_id: event.data.id}});
                         }
-                        stati.map(status => {
-                            twitterBotClient.tweet(status, {reply: {in_reply_to_tweet_id: event.data.id}});
+                        let replyTo = event.data.id;
+                        stati.forEach(async status => {
+                            const tweetStatus = await twitterBotClient.tweet(status, {reply: {in_reply_to_tweet_id: replyTo}});
+                            replyTo = tweetStatus.data.id;
                         });
                     });
                 }
@@ -74,7 +76,6 @@ const main = async () => {
 
 process.on("SIGINT", () => {
     console.log("bye");
-    stopHorizonStream?.();
     twitterStream?.close();
 });
 
