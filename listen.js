@@ -40,7 +40,7 @@ const main = async () => {
     await initDB();
 
     const me = await twitterBotClient.me();
-    console.log("Logged in to twitter as", me.data.username);
+    console.log("Logged in to twitter as", me.data.username, me.data.id);
 
     twitterApiApp.v2.updateStreamRules({
         add: [
@@ -49,13 +49,18 @@ const main = async () => {
         ]
     }).then(() => {
         twitterApiApp.v2.searchStream({
-            expansions: "entities.mentions.username,author_id",
+            expansions: "entities.mentions.username,author_id,referenced_tweets.id",
             "tweet.fields": "entities"
         }).then(stream => {
             twitterStream = stream;
             stream.on('data event content', (event) => {
                 if (event.matching_rules.find(r => r.tag === "account mentions")) {
                     if (event.data.author_id === me.data.id) {
+                        console.log("Not reacting to myself");
+                        return;
+                    }
+                    if (event.data.referenced_tweets?.find(r => r.type === "retweeted")) {
+                        console.log("Not replying to retweet", event.data.id);
                         return;
                     }
                     console.log("Replying to", event.data.id);
