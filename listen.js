@@ -26,8 +26,8 @@ const reactToMention = async (data) => {
     return Promise.all(data.entities.cashtags.map(cashtag => assetStats(cashtag.tag)))
         .then(assets => assets.flat())
         .then(assetStats => assetStats.map(assetStat => '' +
-                `🧹 ${assetStat.code}*${shortIssuer(assetStat.issuer)} has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
-                `🔥 ${assetStat.burnedCount} operations burned ${assetStat.burnedAmount} $${assetStat.code}\n` +
+                `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
+                `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} $${assetStat.code}\n`) +
                 `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
                 '#trashtocash #stellarclaim\n\n' +
                 `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
