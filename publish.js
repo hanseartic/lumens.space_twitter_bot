@@ -26,7 +26,7 @@ const main = async () => {
 
     const status =
         `🚀 ${total.toFormat()} claimable balances have been cleaned with #stellarclaim:🗑💱💰!\n\n` +
-        `🔥 ${burned.toFormat()} got burned\n` +
+        `🔥 ${burned.toFormat()} of them got burned\n` +
         `💱 ${swapped.toFormat()} have been converted into ~${amount.toFormat(3)} $XLM\n` +
         "\n" +
         "🧹 Clean your #stellar account off spam on https://balances.lumens.space/claim\n" +
