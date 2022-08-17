@@ -27,9 +27,12 @@ const fetchPayments = async (latestId, db) => {
 };
 
 
-const list = () => {
-    getBurnedCount().then(burnCount => console.log("burn", burnCount));
-    getSwappedCount().then(swappedCount => console.log("swap", swappedCount))
+const list = async () => {
+    const burnCount = await getBurnedCount();
+    const swappedCount = await getSwappedCount();
+    const total = new BigNumber(burnCount).plus(swappedCount);
+    console.log({burns: burnCount, swaps: swappedCount, total: total.toNumber()});
+
 };
 
 const run = () => {
@@ -38,8 +41,7 @@ const run = () => {
         console.log("fetching new claimable balances. starting at cursor " + latestId);
         await fetchPayments(latestId, dab);
         console.log("synced all available claimable balances");
-        await list();
-        dab.close();
+        list().then(() => dab.close());
     });
 };
 
