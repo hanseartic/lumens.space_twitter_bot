@@ -1,6 +1,6 @@
 const twitterConfig = require("./twitter_config");
 const {TwitterApi} = require("twitter-api-v2");
-const {init: initDB, matchAssets, getSwappedCount, getSwaps, getBurnedCount} = require("./db");
+const {init: initDB, matchAssets, getSwappedCount, getSwaps, getBurnedCount, getBurns} = require("./db");
 const {sumReducer} = require("./common");
 const BigNumber = require("bignumber.js");
 const twitterApiApp = new TwitterApi(process.env.TWITTER_APP_BEARER_TOKEN);
@@ -15,7 +15,8 @@ const assetStats = (assetCode) => {
             return {...asset,
                 swappedCount: await getSwappedCount(assetCode),
                 burnedCount: await getBurnedCount(assetCode),
-                swappedAmount: await getSwaps(assetCode).then(swaps => swaps.map(swap => swap.amount).reduce(sumReducer, new BigNumber(0)).toFormat())
+                swappedAmount: await getSwaps(assetCode).then(swaps => swaps.map(swap => swap.amount).reduce(sumReducer, new BigNumber(0)).toFormat()),
+                burnedAmount: await getBurns(assetCode).then(burns => burns.map(burn => burn.amount).reduce(sumReducer, new BigNumber(0)).toFormat())
             };
         })));
 };
@@ -25,10 +26,10 @@ const reactToMention = async (data) => {
     return Promise.all(data.entities.cashtags.map(cashtag => assetStats(cashtag.tag)))
         .then(assets => assets.flat())
         .then(assetStats => assetStats.map(assetStat => '' +
-                `🧹 ${assetStat.code}*${shortIssuer(assetStat.issuer)} has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times:\n` +
-                `🔥 ${assetStat.burnedCount} burns\n` +
+                `🧹 ${assetStat.code}*${shortIssuer(assetStat.issuer)} has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
+                `🔥 ${assetStat.burnedCount} operations burned ${assetStat.burnedAmount} $${assetStat.code}\n` +
                 `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
-                '#stellarclaim \n\n' +
+                '#trashtocash #stellarclaim\n\n' +
                 `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
         ));
 };
@@ -57,14 +58,24 @@ const main = async () => {
                     if (event.data.author_id === me.data.id) {
                         return;
                     }
+                    console.log("Replying to", event.data.id);
+                    const dontReplyToUsers = event.includes.users.map(u => u.id);
                     reactToMention(event.data).then(stati => {
                         if (stati.length === 0) {
-                            twitterBotClient.tweet("I have not processed such asset(s).", {reply: {in_reply_to_tweet_id: event.data.id}});
+                            twitterBotClient.tweet(
+                                "🤷 I have not processed such asset(s).",
+                                {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
+                            );
                         }
+
+                        // in order to make this a thread, the reply-to id must be updated after each post
                         let replyTo = event.data.id;
                         (async() => {
                             for (const status of stati) {
-                                const tweetStatus = await twitterBotClient.tweet(status, {reply: {in_reply_to_tweet_id: replyTo}});
+                                const tweetStatus = await twitterBotClient.tweet(
+                                    status,
+                                    {reply: {in_reply_to_tweet_id: replyTo, exclude_reply_user_ids: dontReplyToUsers}}
+                                );
                                 replyTo = tweetStatus.data.id;
                             }
                         })()

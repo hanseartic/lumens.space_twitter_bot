@@ -24,6 +24,10 @@ const getBurnedCount = (asset) => {
         .then(r => r.burned)
 };
 
+const getBurns = (asset) => {
+    return database?.all(`SELECT * FROM payments WHERE op_type = '1' AND asset LIKE '${asset??"%"}-%'`);
+}
+
 const getSwappedCount = (asset) => {
     return database?.get(`SELECT count(*) as paid FROM payments WHERE op_type = '13' AND asset LIKE '${asset??"%"}-%'`)
         .then(r => r.paid);
@@ -56,6 +60,7 @@ module.exports = {
     init,
     confirmTweet,
     getBurnedCount,
+    getBurns,
     getLatestTweet,
     getPaymentsCursor: getCursor,
     getSwappedCount,
