@@ -10,34 +10,34 @@ const twitterBotClient = twitterBotApp.v2;
 
 const assetStats = (assetCode) => {
     return matchAssets(assetCode)
-        .then(assets => Promise.all(assets.map(async asset => {
+        .map(asset => {
             const assetCode = `${asset.code}-${asset.issuer}`;
             return {...asset,
-                swappedCount: await getSwappedCount(assetCode),
-                burnedCount: await getBurnedCount(assetCode),
-                swappedAmount: await getSwaps(assetCode).then(swaps => swaps.map(swap => swap.amount).reduce(sumReducer, new BigNumber(0)).toFormat()),
-                burnedAmount: await getBurns(assetCode).then(burns => burns.map(burn => burn.amount).reduce(sumReducer, new BigNumber(0)).toFormat())
+                swappedCount: getSwappedCount(assetCode),
+                burnedCount: getBurnedCount(assetCode),
+                swappedAmount: getSwaps(assetCode).map(swap => swap.amount).reduce(sumReducer, new BigNumber(0)).toFormat(),
+                burnedAmount: getBurns(assetCode).map(burn => burn.amount).reduce(sumReducer, new BigNumber(0)).toFormat()
             };
-        })));
+        });
 };
 const shortIssuer = (issuer) => issuer.substring(0, 3) + '…' + issuer.substring(53)
 
-const reactToMention = async (data) => {
-    return Promise.all(data.entities.cashtags.map(cashtag => assetStats(cashtag.tag)))
-        .then(assets => assets.flat())
-        .then(assetStats => assetStats.map(assetStat => '' +
+const reactToMention = (data) => {
+    return data.entities.cashtags.map(cashtag => assetStats(cashtag.tag))
+        .flat()
+        .map(assetStat => '' +
                 `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
                 `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} $${assetStat.code}\n`) +
                 `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
                 '#trashtocash #stellarclaim\n\n' +
                 `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
-        ));
+        );
 };
 
 let twitterStream;
 
 const main = async () => {
-    await initDB();
+    initDB();
 
     const me = await twitterBotClient.me();
     console.log("Logged in to twitter as", me.data.username, me.data.id);
@@ -65,17 +65,17 @@ const main = async () => {
                     }
                     console.log("Replying to", event.data.id);
                     const dontReplyToUsers = event.includes.users.map(u => u.id);
-                    reactToMention(event.data).then(stati => {
-                        if (stati.length === 0) {
-                            twitterBotClient.tweet(
-                                "🤷 I have not processed such asset(s).",
-                                {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
-                            );
-                        }
 
+                    const stati = reactToMention(event.data);
+                    if (stati.length === 0) {
+                        twitterBotClient.tweet(
+                            "🤷 I have not processed such asset(s).",
+                            {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
+                        );
+                    } else {
                         // in order to make this a thread, the reply-to id must be updated after each post
                         let replyTo = event.data.id;
-                        (async() => {
+                        (async () => {
                             for (const status of stati) {
                                 const tweetStatus = await twitterBotClient.tweet(
                                     status,
@@ -83,8 +83,8 @@ const main = async () => {
                                 );
                                 replyTo = tweetStatus.data.id;
                             }
-                        })()
-                    });
+                        })();
+                    }
                 }
             });
         });

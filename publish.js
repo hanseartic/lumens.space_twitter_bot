@@ -8,24 +8,24 @@ const {confirmTweet, getSwappedCount, getBurnedCount, getLatestTweet, getPayment
 const twitterApi = new TwitterApi(twitterConfig);
 const twitterClient = twitterApi.v2;
 
-const main = async () => {
-    await initDB();
+const main = () => {
+    initDB();
 
-    const latestTweet = await getLatestTweet();
-    const cursor = await getPaymentsCursor();
+    const latestTweet = getLatestTweet();
+    const cursor = getPaymentsCursor();
     if (cursor === latestTweet?.latest_payment) {
         console.log("Already published for latest TX");
         return;
     }
 
-    const swaps = await getSwaps();
-    const swapped = new BigNumber(await getSwappedCount());
-    const burned = new BigNumber(await getBurnedCount());
+    const swaps = getSwaps();
+    const swapped = new BigNumber(getSwappedCount());
+    const burned = new BigNumber(getBurnedCount());
     const total = swapped.plus(burned);
     const amount = swaps.map(swap => swap.amount).reduce(sumReducer);
 
     const status =
-        `🚀 ${total.toFormat()} claimable balances have been cleaned with #stellarclaim:🗑💱💰!\n\n` +
+        `🚀 ${total.toFormat()} claimable balances of #spam assets have been cleaned with #stellarclaim:🗑💱💰!\n\n` +
         `🔥 ${burned.toFormat()} of them got burned\n` +
         `💱 ${swapped.toFormat()} have been converted into ~${amount.toFormat(3)} $XLM\n` +
         "\n" +
