@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS payments(
     amount DOUBLE PRECISION NOT NULL,
     op_type SMALLINT NOT NULL
 ) WITHOUT ROWID;
-CREATE INDEX idx_ts ON payments(timestamp);
+CREATE INDEX IF NOT EXISTS idx_ts ON payments(timestamp);
 
 --------------------------------------------------------------------------------
 -- Down

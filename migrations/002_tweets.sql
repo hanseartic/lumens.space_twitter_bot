@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS tweets(
                          latest_payment TEXT NOT NULL,
                          FOREIGN KEY(latest_payment) REFERENCES payments (id)
 ) WITHOUT ROWID;
-CREATE INDEX idx_tweet_ts ON tweets(timestamp);
+CREATE INDEX IF NOT EXISTS idx_tweet_ts ON tweets(timestamp);
 
 --------------------------------------------------------------------------------
 -- Down

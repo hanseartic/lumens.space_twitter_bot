@@ -10,9 +10,12 @@
   "license": "MIT",
   "dependencies": {
     "@blackglory/better-sqlite3-migrations": "^0.1.15",
+    "@cosmic-plus/loopcall": "^1.6.0",
     "better-sqlite3": "^7.6.2",
+    "better-sqlite3-helper": "^3.1.6",
     "bignumber.js": "^9.1.0",
     "node-fetch": "^2.6.7",
+    "stellar-sdk": "^10.2.0",
     "twitter-api-v2": "^1.12.3"
   }
 }
