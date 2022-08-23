@@ -1,23 +1,37 @@
-const {init: initDB, getSwaps} = require("./db.js");
 const BigNumber = require("bignumber.js");
 const {TwitterApi} = require("twitter-api-v2");
 const twitterConfig = require("./twitter_config");
 const {sumReducer} = require("./common");
-const {confirmTweet, getSwappedCount, getBurnedCount, getLatestTweet, getPaymentsCursor} = require("./db");
+const {getBurnedCount, database, getLatestTweet, getPaymentsCursor, getSwappedCount, getSwaps, insertTweet} = require("./db");
 
 const twitterApi = new TwitterApi(twitterConfig);
 const twitterClient = twitterApi.v2;
 
-const main = () => {
-    initDB();
+// log every 5 minutes if there was no update
+const notifyAfter = 300;
+let notifyAt;
+let processing = false;
 
+const shouldNotifyLogs = () => {
+    const shouldI = new Date().getTime() >= (notifyAt??0);
+    if (shouldI) {
+        notifyAt =  new Date().getTime() + notifyAfter * 1000;
+    }
+    return shouldI;
+}
+
+const main = () => {
     const latestTweet = getLatestTweet();
     const cursor = getPaymentsCursor();
+    const shouldNotify = shouldNotifyLogs();
     if (cursor === latestTweet?.latest_payment) {
-        console.log("Already published for latest TX");
+        if (shouldNotify) {
+            console.log("Already published for latest TX", cursor);
+        }
         return;
     }
 
+    processing = true;
     const swaps = getSwaps();
     const swapped = new BigNumber(getSwappedCount());
     const burned = new BigNumber(getBurnedCount());
@@ -33,12 +47,29 @@ const main = () => {
         "\n" +
         "#StellarFamily #trashtocash #XLM";
 
-    twitterClient.tweet(status)
-        .then(result => {
-            console.log("sent tweet:", result.data.id);
-            confirmTweet(result.data.id, cursor);
-        });
+    twitterClient
+        .tweet(status)
+        .then(result => result.data.id)
+        .then(tweetId => confirmTweet(tweetId, cursor))
+        .then(tweetId => console.log("sent tweet:", tweetId))
+        .catch(console.warn)
+        .finally(() => { processing = false; });
 };
 
-main();
-process.on("SIGINT", () => {});
+const confirmTweet = (tweetId, operationsCursor) => {
+    insertTweet(tweetId, operationsCursor);
+    return tweetId;
+}
+
+const intervalEntry = () => {
+    if(!processing) {
+        main();
+        database().close();
+    }
+    return intervalEntry;
+}
+
+const intervalID = setInterval(intervalEntry(), 1000);
+process.on("SIGINT", () => {
+    clearInterval(intervalID);
+});
