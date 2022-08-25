@@ -23,12 +23,9 @@ const shouldNotifyLogs = () => {
 const main = () => {
     const latestTweet = getLatestTweet();
     const cursor = getPaymentsCursor();
-    const shouldNotify = shouldNotifyLogs();
+
     if (cursor === latestTweet?.latest_payment) {
-        if (shouldNotify) {
-            console.log("Already published for latest TX", cursor);
-        }
-        return;
+        return Promise.reject("Already published tweet for latest TX " + cursor);
     }
 
     processing = true;
@@ -47,7 +44,15 @@ const main = () => {
         "\n" +
         "#StellarFamily #trashtocash #XLM";
 
-    twitterClient
+/*
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            console.log(status);
+            resolve({data:{id:cursor}});
+        }, 2000);
+    })
+ */
+    return twitterClient
         .tweet(status)
         .then(result => result.data.id)
         .then(tweetId => confirmTweet(tweetId, cursor))
@@ -63,8 +68,14 @@ const confirmTweet = (tweetId, operationsCursor) => {
 
 const intervalEntry = () => {
     if(!processing) {
-        main();
-        database().close();
+        main()
+            .then(() => { notifyAt = new Date().getTime() + 15000; })
+            .catch(e => {
+                if (shouldNotifyLogs()) {
+                    console.log(e);
+                }
+            })
+            .finally(() => database().close());
     }
     return intervalEntry;
 }

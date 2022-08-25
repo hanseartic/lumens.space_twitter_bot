@@ -25,38 +25,38 @@ const getLatestTweet = () => {
 const getBurnedCount = (asset) => {
     return db().queryFirstRow(
         "SELECT count(*) as burned FROM payments WHERE op_type = '1' AND asset LIKE ?",
-        `${asset ?? "%"}-%`
+        `${asset ?? ""}%:%`
     ).burned;
 };
 
 const getBurns = (asset) => {
     return db().query(
         "SELECT * FROM payments WHERE op_type = '1' AND asset LIKE ?",
-        `${asset ?? "%"}-%`
+        `${asset ?? ""}%:%`
     );
 }
 
 const getSwappedCount = (asset) => {
     return db().queryFirstRow(
         "SELECT count(*) as paid FROM payments WHERE op_type = '13' AND asset LIKE ?",
-        `${asset ?? "%"}-%`
+        `${asset ?? ""}%:%`
     ).paid;
 }
 
 const getSwaps = (asset) => {
     return db().query(
         "SELECT * FROM payments WHERE op_type = '13' AND asset LIKE ?",
-        `${asset ?? "%"}-%`
+        `${asset ?? ""}%:%`
     );
 };
 
 const matchAssets = (assetCode) => {
     return db().query(
         "SELECT DISTINCT asset FROM payments WHERE asset like ?",
-        `${assetCode??""}%-%`
+        `${assetCode??""}%:%`
     )
         .map(row => {
-            const rowData = row.asset.split('-');
+            const rowData = row.asset.split(':');
             return {code: rowData[0], issuer: rowData[1]};
         });
 };
