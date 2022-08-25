@@ -25,35 +25,35 @@ const getLatestTweet = () => {
 const getBurnedCount = (asset) => {
     return db().queryFirstRow(
         "SELECT count(*) as burned FROM payments WHERE op_type = '1' AND asset LIKE ?",
-        `${asset ?? ""}%:%`
+        bindAsset(asset)
     ).burned;
 };
 
 const getBurns = (asset) => {
     return db().query(
         "SELECT * FROM payments WHERE op_type = '1' AND asset LIKE ?",
-        `${asset ?? ""}%:%`
+        bindAsset(asset)
     );
 }
 
 const getSwappedCount = (asset) => {
     return db().queryFirstRow(
         "SELECT count(*) as paid FROM payments WHERE op_type = '13' AND asset LIKE ?",
-        `${asset ?? ""}%:%`
+        bindAsset(asset)
     ).paid;
 }
 
 const getSwaps = (asset) => {
     return db().query(
         "SELECT * FROM payments WHERE op_type = '13' AND asset LIKE ?",
-        `${asset ?? ""}%:%`
+        bindAsset(asset)
     );
 };
 
 const matchAssets = (assetCode) => {
     return db().query(
         "SELECT DISTINCT asset FROM payments WHERE asset like ?",
-        `${assetCode??""}%:%`
+        bindAsset(assetCode)
     )
         .map(row => {
             const rowData = row.asset.split(':');
@@ -66,6 +66,17 @@ const insertTweet = (tweetId, payment) => {
         id: tweetId, latest_payment: payment
     });
 };
+
+const bindAsset = (asset) => {
+    if (!asset) {
+        return "%";
+    }
+    const parts = asset.split(':');
+    if (parts.length === 1) {
+        return asset + "%:%";
+    }
+    return asset;
+}
 
 module.exports = {
     database: db,

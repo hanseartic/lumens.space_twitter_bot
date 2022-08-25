@@ -11,7 +11,7 @@ const twitterBotClient = twitterBotApp.v2;
 const assetStats = (assetCode) => {
     return matchAssets(assetCode)
         .map(asset => {
-            const assetCode = `${asset.code}-${asset.issuer}`;
+            const assetCode = `${asset.code}:${asset.issuer}`;
             return {...asset,
                 swappedCount: getSwappedCount(assetCode),
                 burnedCount: getBurnedCount(assetCode),
@@ -41,51 +41,58 @@ const main = async () => {
     const me = await twitterBotClient.me();
     console.log("Logged in to twitter as", me.data.username, me.data.id);
 
-    twitterApiApp.v2.updateStreamRules({
+    const rules = await twitterApiApp.v2.streamRules();
+    console.log(rules.data.map(r => r.id))
+    await twitterApiApp.v2.updateStreamRules({
+        delete: {ids: rules.data.map(r => r.id) }
+    });
+    console.log("clear")
+    const rulesUpdated = await twitterApiApp.v2.updateStreamRules({
         add: [
             {"value": "@" + me.data.username, "tag": "account mentions"},
-            {"value": "has:cashtags", "tag": "cashtag"}
+            //{"value": "has:cashtags", "tag": "cashtag"}
         ]
-    }).then(() => {
-        twitterApiApp.v2.searchStream({
-            expansions: "entities.mentions.username,author_id,referenced_tweets.id",
-            "tweet.fields": "entities"
-        }).then(stream => {
-            twitterStream = stream;
-            stream.on('data event content', (event) => {
-                if (event.matching_rules.find(r => r.tag === "account mentions")) {
-                    if (event.data.author_id === me.data.id) {
-                        console.log("Not reacting to myself");
-                        return;
-                    }
-                    if (event.data.referenced_tweets?.find(r => r.type === "retweeted")) {
-                        console.log("Not replying to retweet", event.data.id);
-                        return;
-                    }
-                    console.log("Replying to", event.data.id);
-                    const dontReplyToUsers = event.includes.users.map(u => u.id);
+    });
+    console.log("Rules updated", rulesUpdated.meta);
 
-                    const stati = reactToMention(event.data);
-                    if (stati.length === 0) {
-                        twitterBotClient.tweet(
-                            "🤷 I have not processed such asset(s).",
-                            {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
-                        );
-                    } else {
-                        // in order to make this a thread, the reply-to id must be updated after each post
-                        let replyTo = event.data.id;
-                        (async () => {
-                            for (const status of stati) {
-                                const tweetStatus = await twitterBotClient.tweet(
-                                    status,
-                                    {reply: {in_reply_to_tweet_id: replyTo, exclude_reply_user_ids: dontReplyToUsers}}
-                                );
-                                replyTo = tweetStatus.data.id;
-                            }
-                        })();
-                    }
+    twitterApiApp.v2.searchStream({
+        expansions: "entities.mentions.username,author_id,referenced_tweets.id",
+        "tweet.fields": "entities"
+    }).then(stream => {
+        twitterStream = stream;
+        stream.on('data event content', (event) => {
+            if (event.matching_rules.find(r => r.tag === "account mentions")) {
+                if (event.data.author_id === me.data.id) {
+                    console.log("Not reacting to myself");
+                    return;
                 }
-            });
+                if (event.data.referenced_tweets?.find(r => r.type === "retweeted")) {
+                    console.log("Not replying to retweet", event.data.id);
+                    return;
+                }
+                console.log("Replying to", event.data.id);
+                const dontReplyToUsers = event.includes.users.map(u => u.id);
+
+                const stati = reactToMention(event.data);
+                if (stati.length === 0) {
+                    twitterBotClient.tweet(
+                        "🤷 I have not processed such asset(s).",
+                        {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
+                    );
+                } else {
+                    // in order to make this a thread, the reply-to id must be updated after each post
+                    let replyTo = event.data.id;
+                    (async () => {
+                        for (const status of stati) {
+                            const tweetStatus = await twitterBotClient.tweet(
+                                status,
+                                {reply: {in_reply_to_tweet_id: replyTo, exclude_reply_user_ids: dontReplyToUsers}}
+                            );
+                            replyTo = tweetStatus.data.id;
+                        }
+                    })();
+                }
+            }
         });
     });
 };
