@@ -2,7 +2,7 @@ const BigNumber = require("bignumber.js");
 const fetch = require("node-fetch");
 
 const paymentLocatorUrl = "https://api.stellar.expert/explorer/public/payments?sort=id&limit=200&order=asc&memo="+encodeURI("stellarclaim:🗑💱💰");
-const {database, init: initDB, getBurnedCount, getPaymentsCursor, getSwappedCount} = require("./db")
+const {database, getBurnedCount, getPaymentsCursor, getSwappedCount} = require("./db")
 let shouldRun = true;
 
 const fetchPayments = async (latestId) => {
@@ -17,10 +17,17 @@ const fetchPayments = async (latestId) => {
                     break;
                 }
                 //process.stdout.write(".");
-                database.prepare(
-                    "INSERT INTO payments (id, timestamp, asset, sender, receiver, amount, op_type) VALUES (?, ?, ?, ?, ?, ?, ?)"
-                ).run(
-                    r.id, r.ts, r.source_asset.substring(-2), r.from, r.to, (new BigNumber(r.amount).toNumber()), r.optype
+                database().insert(
+                    "payments",
+                    {
+                        id: r.id,
+                        timestamp: r.ts,
+                        asset: r.source_asset.substring(-2),
+                        sender: r.from,
+                        receiver: r.to,
+                        amount: (new BigNumber(r.amount).toNumber()),
+                        op_type: r.optype,
+                    }
                 );
             }
             //process.stdout.write("\n");
@@ -51,25 +58,25 @@ const run = () => {
     const latestId = getPaymentsCursor();
     console.log("fetching new claimable balances");
 
-    database.transaction(async () => {
-        await fetchPayments(latestId, database)
+    database().transaction(async () => {
+        await fetchPayments(latestId)
             .then(() => console.log("synced all available claimable balances"))
         running = false;
         list();
+        database().close();
     }).immediate();
 
     return run;
 };
 
 const main = () => {
-    initDB();
     process.on('SIGINT', () => {
         console.log("Received SIGINT - stopping");
         shouldRun = false;
         clearInterval(timer);
     });
     process.on('exit', () => {
-        database.close();
+        database().close();
     });
 
     const timer = setInterval(run(), 15000);

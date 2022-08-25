@@ -10,6 +10,10 @@ const options = {
 
 const db = () => DB(options);
 
+const getScanCursor = () => {
+    return db().queryFirstRow("SELECT id from operations ORDER BY id DESC LIMIT 1")?.id;
+}
+
 const getCursor = () => {
     return db().queryFirstRow("SELECT id FROM payments ORDER BY id DESC LIMIT 1")?.id;
 };
@@ -49,7 +53,7 @@ const getSwaps = (asset) => {
 const matchAssets = (assetCode) => {
     return db().query(
         "SELECT DISTINCT asset FROM payments WHERE asset like ?",
-        `${assetCode??"%"}-%`
+        `${assetCode??""}%-%`
     )
         .map(row => {
             const rowData = row.asset.split('-');
@@ -68,6 +72,7 @@ module.exports = {
     getBurnedCount,
     getBurns,
     getLatestTweet,
+    getScanCursor,
     getPaymentsCursor: getCursor,
     getSwappedCount,
     getSwaps,
