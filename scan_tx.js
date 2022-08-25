@@ -94,7 +94,7 @@ const main = async (cursor) => {
                                         sender: currentRecord.from_account,
                                         receiver: currentRecord.to_account,
                                         amount: currentRecord.to_amount,
-                                        op_type: currentRecord.is_burn ? 13 : 1,
+                                        op_type: currentRecord.is_burn ? 1 : 13,
                                     }
                                 );
                             }

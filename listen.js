@@ -9,7 +9,7 @@ const twitterBotClient = twitterBotApp.v2;
 
 
 const assetStats = (assetCode) => {
-    return matchAssets(assetCode)
+    return matchAssets(assetCode, true)
         .map(asset => {
             const assetCode = `${asset.code}:${asset.issuer}`;
             return {...asset,
@@ -22,8 +22,12 @@ const assetStats = (assetCode) => {
 };
 const shortIssuer = (issuer) => issuer.substring(0, 3) + '…' + issuer.substring(53)
 
-const reactToMention = (data) => {
-    return data.entities.cashtags.map(cashtag => assetStats(cashtag.tag))
+const reactToMention = (data, repliedTo) => {
+    const cashtags = ((data.entities.cashtags?.length)
+        ? data.entities.cashtags
+        : repliedTo?.entities.cashtags) ?? [];
+
+    return cashtags.map(cashtag => assetStats(cashtag.tag))
         .flat()
         .map(assetStat => '' +
                 `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
@@ -73,7 +77,7 @@ const main = async () => {
                 console.log("Replying to", event.data.id);
                 const dontReplyToUsers = event.includes.users.map(u => u.id);
 
-                const stati = reactToMention(event.data);
+                const stati = reactToMention(event.data, getReplyFromIncludes(event));
                 if (stati.length === 0) {
                     twitterBotClient.tweet(
                         "🤷 I have not processed such asset(s).",
@@ -97,6 +101,10 @@ const main = async () => {
     });
 };
 
+const getReplyFromIncludes = event => {
+    const isReplyTo = event.data.referenced_tweets.find(ref => ref.type === 'replied_to')?.id;
+    return event.includes.tweets?.find(tweet => tweet.id === isReplyTo);
+}
 
 process.on("SIGINT", () => {
     console.log("bye");

@@ -50,7 +50,10 @@ const getSwaps = (asset) => {
     );
 };
 
-const matchAssets = (assetCode) => {
+const matchAssets = (assetCode, strict) => {
+    if (true === strict && bindAsset(assetCode) !== assetCode) {
+        assetCode = assetCode + ":G%";
+    }
     return db().query(
         "SELECT DISTINCT asset FROM payments WHERE asset like ?",
         bindAsset(assetCode)
