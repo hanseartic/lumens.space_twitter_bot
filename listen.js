@@ -1,6 +1,6 @@
 const twitterConfig = require("./twitter_config");
 const {TwitterApi} = require("twitter-api-v2");
-const {init: initDB, matchAssets, getSwappedCount, getSwaps, getBurnedCount, getBurns} = require("./db");
+const {matchAssets, getSwappedCount, getSwaps, getBurnedCount, getBurns} = require("./db");
 const {sumReducer} = require("./common");
 const BigNumber = require("bignumber.js");
 const twitterApiApp = new TwitterApi(process.env.TWITTER_APP_BEARER_TOKEN);
@@ -37,7 +37,6 @@ const reactToMention = (data) => {
 let twitterStream;
 
 const main = async () => {
-    initDB();
 
     const me = await twitterBotClient.me();
     console.log("Logged in to twitter as", me.data.username, me.data.id);
