@@ -133,20 +133,19 @@ const main = async (cursor) => {
                             spawnWorker(currentCursor);
                             db.database().update('opscan', {cursor_from: 0, cursor_current: currentCursor, last_update_ts: Date.now()/1000}, {worker: 0});
                             currentCursor = "now";
-                        } else {
-                            db.database().query("SELECT worker, cursor_from, datetime(last_update_ts, 'unixepoch', 'localtime') as time from opscan where last_update_ts < unixepoch() - 300")
-                                .map(staleWorker => {
-                                    if (workerThreads[staleWorker.worker]) {
-                                        console.log(`Worker ${staleWorker.worker} has not updated in 5 minutes. Restarting`);
-                                        workerThreads[staleWorker.worker]?.terminate().then(() => {
-                                            console.log(`${staleWorker.worker} stopped.`);
-                                            delete workerThreads[staleWorker.worker];
-                                            spawnWorker(staleWorker.cursor_from, false);
-                                        });
-                                    }
-                                });
                         }
                     }
+                    db.database().query("SELECT worker, cursor_from, datetime(last_update_ts, 'unixepoch', 'localtime') as time from opscan where last_update_ts < unixepoch() - 300")
+                        .map(staleWorker => {
+                            if (workerThreads[staleWorker.worker]) {
+                                console.log(`Worker ${staleWorker.worker} has not updated in 5 minutes. Restarting`);
+                                workerThreads[staleWorker.worker]?.terminate().then(() => {
+                                    console.log(`${staleWorker.worker} stopped.`);
+                                    delete workerThreads[staleWorker.worker];
+                                    spawnWorker(staleWorker.cursor_from, false);
+                                });
+                            }
+                        });
                 } else {
                     if (!maxCursor) {
                         return;
