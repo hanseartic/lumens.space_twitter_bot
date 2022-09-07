@@ -5,10 +5,10 @@ const options = {
     WAL: true,
     migrate: {  // disable completely by setting `migrate: false`
 //        force: 'last',
-    }
+    },
 };
 
-const db = () => DB(options);
+const db = () => DB(options).defaultSafeIntegers(true);
 
 const getScanCursor = () => {
     return db().queryFirstRow("SELECT id from operations ORDER BY id DESC LIMIT 1")?.id;
@@ -75,8 +75,8 @@ const bindAsset = (asset) => {
         return "%";
     }
     const parts = asset.split(':');
-    if (parts.length === 1) {
-        return asset + "%:%";
+    if (parts.length === 1 || parts[1] === "") {
+        return parts[0] + "%:%";
     }
     return asset;
 }
