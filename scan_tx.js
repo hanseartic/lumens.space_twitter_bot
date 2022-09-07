@@ -178,8 +178,9 @@ const main = async (cursor) => {
             if (worker.isMainThread) {
                 await new Promise(res => {
                     setTimeout(() => res(), 3000);
-                })
-                console.log("up-to-date")
+                });
+
+                console.log(`up-to-date @${currentCursor}`)
             }
         }
         cursor = currentCursor;
