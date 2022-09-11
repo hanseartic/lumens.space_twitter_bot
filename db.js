@@ -1,4 +1,5 @@
 const DB = require('better-sqlite3-helper');
+const BigNumber = require("bignumber.js");
 
 const options = {
     path: './db.sql',
@@ -11,7 +12,9 @@ const options = {
 const db = () => DB(options).defaultSafeIntegers(true);
 
 const getScanCursor = () => {
-    return db().queryFirstRow("SELECT id from operations ORDER BY id DESC LIMIT 1")?.id;
+    const { scanCursor} = db().queryFirstRowObject("SELECT cursor_current as scanCursor FROM opscan WHERE worker = 0");
+    const { latestOp } = db().queryFirstRowObject("SELECT id as latestOp from operations ORDER BY id DESC LIMIT 1");
+    return BigNumber.max(scanCursor??0, latestOp??0).toString();
 }
 
 const getCursor = () => {
