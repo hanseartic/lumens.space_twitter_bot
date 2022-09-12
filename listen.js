@@ -22,10 +22,15 @@ const assetStats = (assetCode) => {
 };
 const shortIssuer = (issuer) => issuer.substring(0, 3) + '…' + issuer.substring(53)
 
+const hashtagsToCashtags = (hashtags) => {
+    const matches = hashtags.filter(hashtag => hashtag.tag.length > 6).map(hashtag => assetStats(hashtag.tag)).flat().map(m => m.code);
+    return hashtags.filter(hashtag => matches.includes(hashtag.tag));
+};
+
 const reactToMention = (data, repliedTo) => {
-    const cashtags = ((data.entities.cashtags?.length)
+    const cashtags = (((data.entities.cashtags?.length)
         ? data.entities.cashtags
-        : repliedTo?.entities.cashtags) ?? [];
+        : repliedTo?.entities.cashtags) ?? []).concat(hashtagsToCashtags({...repliedTo?.entities, ...data.entities}.hashtags ?? []));
 
     return cashtags.map(cashtag => assetStats(cashtag.tag))
         .flat()
