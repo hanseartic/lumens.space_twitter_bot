@@ -23,8 +23,15 @@ const assetStats = (assetCode) => {
 const shortIssuer = (issuer) => issuer.substring(0, 3) + '…' + issuer.substring(53)
 
 const hashtagsToCashtags = (hashtags) => {
-    const matches = hashtags.filter(hashtag => hashtag.tag.length > 6).map(hashtag => assetStats(hashtag.tag)).flat().map(m => m.code);
-    return hashtags.filter(hashtag => matches.includes(hashtag.tag));
+    const matches = [...new Set(
+        hashtags
+        .filter(hashtag => hashtag.tag.length > 6)
+        .map(hashtag => matchAssets(hashtag.tag, false).map(a => a.code))
+        .flat()
+    )];
+
+    return matches.filter(match => hashtags.map(hashtag => hashtag.tag.toLowerCase()).includes(match.toLowerCase()))
+        .map(match => ({tag: match}))
 };
 
 const reactToMention = (data, repliedTo) => {
