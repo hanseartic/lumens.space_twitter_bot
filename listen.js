@@ -25,7 +25,7 @@ const shortIssuer = (issuer) => issuer.substring(0, 3) + '…' + issuer.substrin
 const hashtagsToCashtags = (hashtags) => {
     const matches = [...new Set(
         hashtags
-        .filter(hashtag => hashtag.tag.length > 6)
+        .filter(hashtag => hashtag.tag.length > 6 && hashtag.tag.length <= 12)
         .map(hashtag => matchAssets(hashtag.tag, false).map(a => a.code))
         .flat()
     )];
@@ -38,20 +38,23 @@ const renderTag = (tag) => {
     return (tag.length < 6 ? '$' : '#') + tag;
 };
 
-const reactToMention = (data, repliedTo) => {
-    const cashtags = (((data.entities.cashtags?.length)
-        ? data.entities.cashtags
-        : repliedTo?.entities.cashtags) ?? []).concat(hashtagsToCashtags({...repliedTo?.entities, ...data.entities}.hashtags ?? []));
-
+const cashtagsToTweets = (cashtags) => {
     return cashtags.map(cashtag => assetStats(cashtag.tag))
         .flat()
         .map(assetStat => '' +
-                `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
-                `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} ${renderTag(assetStat.code)}\n`) +
-                `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
-                '#trashtocash #stellarclaim\n\n' +
-                `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
+            `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
+            `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} ${renderTag(assetStat.code)}\n`) +
+            `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
+            '#trashtocash #stellarclaim\n\n' +
+            `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
         );
+}
+
+const getCashtags = (data, repliedTo) => {
+    return (((data.entities.cashtags?.length)
+        ? data.entities.cashtags
+        : repliedTo?.entities.cashtags) ?? [])
+        .concat(hashtagsToCashtags({...repliedTo?.entities, ...data.entities}.hashtags ?? []));
 };
 
 let twitterStream;
@@ -93,13 +96,14 @@ const main = async () => {
                 console.log("Replying to", event.data.id);
                 const dontReplyToUsers = event.includes.users.map(u => u.id);
 
-                const stati = reactToMention(event.data, getReplyFromIncludes(event));
-                if (stati.length === 0) {
+                const cashtags = getCashtags(event.data, getReplyFromIncludes(event));
+                if (cashtags.length === 0) {
                     twitterBotClient.tweet(
                         "🤷 I have not processed such asset(s).",
                         {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
                     );
                 } else {
+                    const stati = cashtagsToTweets(cashtags);
                     // in order to make this a thread, the reply-to id must be updated after each post
                     let replyTo = event.data.id;
                     (async () => {
