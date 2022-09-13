@@ -34,6 +34,10 @@ const hashtagsToCashtags = (hashtags) => {
         .map(match => ({tag: match}))
 };
 
+const renderTag = (tag) => {
+    return (tag.length < 6 ? '$' : '#') + tag;
+};
+
 const reactToMention = (data, repliedTo) => {
     const cashtags = (((data.entities.cashtags?.length)
         ? data.entities.cashtags
@@ -43,7 +47,7 @@ const reactToMention = (data, repliedTo) => {
         .flat()
         .map(assetStat => '' +
                 `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
-                `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} $${assetStat.code}\n`) +
+                `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} ${renderTag(assetStat.code)}\n`) +
                 `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
                 '#trashtocash #stellarclaim\n\n' +
                 `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
