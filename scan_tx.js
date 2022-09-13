@@ -321,9 +321,6 @@ const spawnWorker = (cursor, force) => {
                 if (spawnWorker(m.spawn)) {
                     if (verbose) console.log(`Spawned new worker @${m.spawn} as per worker ${m.worker} request`);
                 }
-            } else if (-1 !== m.indexOf("bye from worker") || -1 !== m.indexOf("shortening own range")) {
-                //if (verbose) console.log(m);
-                //console.table(stats());
             } else {
                 if (verbose) console.log(m);
             }
