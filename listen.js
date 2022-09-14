@@ -93,10 +93,16 @@ const main = async () => {
                     console.log("Not replying to retweet", event.data.id);
                     return;
                 }
-                console.log("Replying to", event.data.id);
+                let cashtags = [];
+                try {
+                    cashtags = getCashtags(event.data, getReplyFromIncludes(event));
+                } catch (e) {
+                    console.warn(e);
+                }
+                console.log("I was mentioned", {tweetId: event.data.id, tags: cashtags.map(t => t.tag)});
+
                 const dontReplyToUsers = event.includes.users.map(u => u.id);
 
-                const cashtags = getCashtags(event.data, getReplyFromIncludes(event));
                 if (cashtags.length === 0) {
                     twitterBotClient.tweet(
                         "🤷 I have not processed such asset(s).",
@@ -123,7 +129,7 @@ const main = async () => {
 };
 
 const getReplyFromIncludes = event => {
-    const isReplyTo = event.data.referenced_tweets.find(ref => ref.type === 'replied_to')?.id;
+    const isReplyTo = event.data.referenced_tweets?.find(ref => ref.type === 'replied_to')?.id;
     return event.includes.tweets?.find(tweet => tweet.id === isReplyTo);
 }
 
