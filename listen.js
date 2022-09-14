@@ -114,7 +114,8 @@ const main = async () => {
                             );
                             replyTo = tweetStatus.data.id;
                         }
-                    })();
+                        return cashtags.map(tag => tag.tag);
+                    })().then(tags => console.log(`replied for [${tags.join(', ')}]`));
                 }
             }
         });
