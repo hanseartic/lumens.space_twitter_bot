@@ -38,16 +38,13 @@ const renderTag = (tag) => {
     return (tag.length < 6 ? '$' : '#') + tag;
 };
 
-const cashtagsToTweets = (cashtags) => {
-    return cashtags.map(cashtag => assetStats(cashtag.tag))
-        .flat()
-        .map(assetStat => '' +
-            `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
-            `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} ${renderTag(assetStat.code)}\n`) +
-            `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
-            '#trashtocash #stellarclaim\n\n' +
-            `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`
-        );
+const statToTweet = (assetStat) => {
+    return '' +
+        `🧹 ${assetStat.code} (by ${shortIssuer(assetStat.issuer)}) has been cleaned ${assetStat.swappedCount + assetStat.burnedCount} times on #stellar network:\n` +
+        `🔥 ${assetStat.burnedCount} burns` + ((assetStat.burnedAmount === "0") ? "\n" : ` burned ${assetStat.burnedAmount} ${renderTag(assetStat.code)}\n`) +
+        `💱 ${assetStat.swappedCount} swaps yielded ${assetStat.swappedAmount} $XLM\n\n` +
+        '#trashtocash #stellarclaim\n\n' +
+        `https://stellar.expert/explorer/public/asset/${assetStat.code}-${assetStat.issuer}`;
 }
 
 const getCashtags = (data, repliedTo) => {
@@ -99,7 +96,7 @@ const main = async () => {
                 } catch (e) {
                     console.warn(e);
                 }
-                console.log("I was mentioned", {tweetId: event.data.id, tags: cashtags.map(t => t.tag)});
+                console.log("Received mention", {tweetId: event.data.id, tags: cashtags.map(t => t.tag)});
 
                 const dontReplyToUsers = event.includes.users.map(u => u.id);
 
@@ -109,19 +106,21 @@ const main = async () => {
                         {reply: {in_reply_to_tweet_id: event.data.id, exclude_reply_user_ids: dontReplyToUsers}}
                     );
                 } else {
-                    const stati = cashtagsToTweets(cashtags);
+                    const stats = cashtags.map(cashtag => assetStats(cashtag.tag)).flat();
                     // in order to make this a thread, the reply-to id must be updated after each post
                     let replyTo = event.data.id;
                     (async () => {
-                        for (const status of stati) {
+                        const replyStatuses = [];
+                        for (const stat of stats) {
                             const tweetStatus = await twitterBotClient.tweet(
-                                status,
+                                statToTweet(stat),
                                 {reply: {in_reply_to_tweet_id: replyTo, exclude_reply_user_ids: dontReplyToUsers}}
                             );
                             replyTo = tweetStatus.data.id;
+                            replyStatuses[`${stat.code}:${shortIssuer(stat.issuer)}`] = replyTo;
                         }
-                        return cashtags.map(tag => tag.tag);
-                    })().then(tags => console.log(`replied for [${tags.join(', ')}]`));
+                        return replyStatuses;
+                    })().then(replyStatuses => console.log(`replied to ${event.data.id}`, replyStatuses));
                 }
             }
         });
