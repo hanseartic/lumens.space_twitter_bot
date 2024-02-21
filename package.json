@@ -15,7 +15,7 @@
     "better-sqlite3-helper": "^3.1.6",
     "bignumber.js": "^9.1.0",
     "node-fetch": "^2.6.7",
-    "stellar-sdk": "^10.2.0",
+    "stellar-sdk": "^11.2.2",
     "twitter-api-v2": "^1.12.3",
     "yargs": "^17.5.1"
   }
